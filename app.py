@@ -8,7 +8,6 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
 from config import Config
-from flask_frozen import Freezer  # For generating static files
 import os
 import base64
 import time
@@ -24,8 +23,7 @@ db = SQLAlchemy(app)
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
 
-# Initialize Frozen-Flask for static site generation
-freezer = Freezer(app)
+
 
 # Gmail daily sending limits
 GMAIL_DAILY_LIMIT = 500  # Standard Gmail limit (2000 for Google Workspace)
@@ -267,5 +265,5 @@ def logout():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # Create database tables
-    freezer.freeze()  # Generate static files
+
     # app.run(host='0.0.0.0', port=5000, debug=True)  # Comment this out for static deployment
