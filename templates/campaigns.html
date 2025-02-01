@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title">Campaigns</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Subject</th>
+                            <th>Status</th>
+                            <th>Emails Sent</th>
+                            <th>Opens</th>
+                            <th>Scheduled Time</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for campaign in user.campaigns %}
+                        <tr>
+                            <td>{{ campaign.subject }}</td>
+                            <td>{{ campaign.status }}</td>
+                            <td>{{ campaign.emails_sent }}</td>
+                            <td>{{ campaign.opens }}</td>
+                            <td>{{ campaign.scheduled_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

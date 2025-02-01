@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Dashboard</h1>
+<p>Welcome, {{ user.name }}!</p>
+<p>Email: {{ user.email }}</p>
+<p>Profile Picture: <img src="{{ user.profile_pic }}" alt="Profile Picture" style="width: 50px; height: 50px; border-radius: 50%;"></p>
+<div class="limits-section">
+    <h2>Email Sending Limits</h2>
+    <p>Daily Limit: {{ limits.limit }}</p>
+    <p>Emails Sent Today: {{ limits.emails_sent_today }}</p>
+    <p>Remaining Emails: {{ limits.remaining }}</p>
+    <div class="progress-bar">
+        <div class="progress" style="width: {{ (limits.emails_sent_today / limits.limit) * 100 }}%;"></div>
+    </div>
+</div>
+
+<h2>Send Bulk Emails</h2>
+<form method="POST" action="/send-emails">
+    <textarea name="emails" placeholder="Enter email addresses (one per line)" rows="10" cols="50" required></textarea><br>
+    <input type="text" name="subject" placeholder="Subject" required><br>
+    <textarea name="body" placeholder="Email body" rows="10" cols="50" required></textarea><br>
+    
+    <!-- Add delay input field -->
+    <label for="delay">Delay between emails (in seconds):</label>
+    <input type="number" name="delay" id="delay" min="1" value="1" required><br>
+    
+    <button type="submit">Send Emails</button>
+</form>
+
+<a href="/profile">Edit Profile</a> | <a href="/logout">Logout</a>
+{% endblock %}

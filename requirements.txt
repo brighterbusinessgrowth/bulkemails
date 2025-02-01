@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-login
+flask-security
+bcrypt
+python-dotenv
+google-auth
+google-auth-oauthlib
+google-api-python-client
+pandas
