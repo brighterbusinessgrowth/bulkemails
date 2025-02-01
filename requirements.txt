@@ -1,8 +1,7 @@
 Flask==2.3.2
 Flask-SQLAlchemy==3.0.5
-Flask-Login==0.6.2  # Use a compatible version of Flask-Login
-Werkzeug==2.3.7  # Use a compatible version of Werkzeug
-Flask-Security-Too==5.3.0  # Optional, for advanced security features
+Flask-Login==0.6.2
+Werkzeug==2.3.7
 bcrypt==4.0.1
 python-dotenv==1.0.0
 google-auth==2.16.0
