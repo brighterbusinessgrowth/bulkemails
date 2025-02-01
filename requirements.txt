@@ -1,7 +1,7 @@
 Flask==2.3.2
 Flask-SQLAlchemy==3.0.5
 Flask-Login==0.6.2
-Flask-Security==4.1.0
+Flask-Security-Too==5.3.0  # Use Flask-Security-Too instead of Flask-Security
 bcrypt==4.0.1
 python-dotenv==1.0.0
 google-auth==2.16.0
