@@ -10,4 +10,4 @@ class Config:
         'https://www.googleapis.com/auth/userinfo.email',
         'openid'
     ]
-    GOOGLE_REDIRECT_URI = 'http://localhost:5000/google-callback'
+    GOOGLE_REDIRECT_URI = 'https://bulkemails-blta.onrender.com/google-callback'
