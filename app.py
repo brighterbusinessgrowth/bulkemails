@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -22,8 +22,6 @@ db = SQLAlchemy(app)
 # Initialize Flask-Login
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-
-
 
 # Gmail daily sending limits
 GMAIL_DAILY_LIMIT = 500  # Standard Gmail limit (2000 for Google Workspace)
@@ -179,15 +177,14 @@ def dashboard():
                          limits=limits,
                          campaigns=campaigns)
 
-# Send emails route
+# Send emails route (updated for AJAX)
 @app.route('/send-emails', methods=['POST'])
 @login_required
 def send_emails():
     try:
         limits = get_email_limits()
         if limits['emails_sent_today'] >= limits['limit']:
-            flash('Daily email limit reached! Try again tomorrow.', 'error')
-            return redirect(url_for('dashboard'))
+            return jsonify({'error': 'Daily email limit reached! Try again tomorrow.'})
 
         emails = [e.strip() for e in request.form.get('emails').split('\n') if e.strip()]
         subject = request.form.get('subject')
@@ -195,8 +192,7 @@ def send_emails():
         delay = int(request.form.get('delay', 1))  # Get delay from form input (default: 1 second)
 
         if len(emails) > limits['remaining']:
-            flash(f'Only {limits["remaining"]} emails remaining today!', 'error')
-            return redirect(url_for('dashboard'))
+            return jsonify({'error': f'Only {limits["remaining"]} emails remaining today!'})
 
         creds_data = session.get('google_credentials')
         credentials = Credentials(
@@ -210,7 +206,8 @@ def send_emails():
 
         service = build('gmail', 'v1', credentials=credentials)
         sent_count = 0
-        
+        failed_emails = []
+
         for email in emails:
             message = {
                 'raw': base64.urlsafe_b64encode(
@@ -223,7 +220,7 @@ def send_emails():
                 session['emails_sent_today'] = session.get('emails_sent_today', 0) + 1  # Update session
                 time.sleep(delay)  # Use the user-specified delay
             except Exception as e:
-                print(f"Failed to send to {email}: {str(e)}")
+                failed_emails.append({'email': email, 'error': str(e)})
 
         new_campaign = Campaign(
             subject=subject,
@@ -233,12 +230,13 @@ def send_emails():
         db.session.add(new_campaign)
         db.session.commit()
 
-        flash(f'Sent {sent_count}/{len(emails)} emails successfully!', 'success')
-        return redirect(url_for('dashboard'))
+        return jsonify({
+            'success': f'Sent {sent_count}/{len(emails)} emails successfully!',
+            'failed_emails': failed_emails
+        })
     except Exception as e:
-        flash(f'Error sending emails: {str(e)}', 'error')
-        return redirect(url_for('dashboard'))
-    
+        return jsonify({'error': f'Error sending emails: {str(e)}'})
+
 # Profile route
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
@@ -265,5 +263,4 @@ def logout():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()  # Create database tables
-
-    # app.run(host='0.0.0.0', port=5000, debug=True)  # Comment this out for static deployment
+    app.run(host='0.0.0.0', port=5000, debug=True)
