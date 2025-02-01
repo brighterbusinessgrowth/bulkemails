@@ -8,22 +8,29 @@ from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from datetime import datetime, timedelta, timezone
 from config import Config
-from flask_frozen import Freezer  # Add this line
+from flask_frozen import Freezer  # For generating static files
 import os
 import base64
 import time
 
+# Initialize Flask app
 app = Flask(__name__)
 app.config.from_object(Config)
 
+# Initialize SQLAlchemy for database
 db = SQLAlchemy(app)
+
+# Initialize Flask-Login
 login_manager = LoginManager(app)
 login_manager.login_view = 'login'
-freezer = Freezer(app)  # Add this line
+
+# Initialize Frozen-Flask for static site generation
+freezer = Freezer(app)
 
 # Gmail daily sending limits
 GMAIL_DAILY_LIMIT = 500  # Standard Gmail limit (2000 for Google Workspace)
 
+# Define User model
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -33,6 +40,7 @@ class User(db.Model, UserMixin):
     google_auth = db.Column(db.Boolean, default=False)
     campaigns = db.relationship('Campaign', backref='author', lazy=True)
 
+# Define Campaign model
 class Campaign(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     subject = db.Column(db.String(200))
@@ -40,12 +48,15 @@ class Campaign(db.Model):
     sent_at = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
 
+# Load user for Flask-Login
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+# Allow insecure transport for OAuth (for local testing only)
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
+# Function to get Google OAuth flow
 def get_google_flow():
     return Flow.from_client_secrets_file(
         'client_secret.json',
@@ -53,8 +64,8 @@ def get_google_flow():
         redirect_uri=app.config['GOOGLE_REDIRECT_URI']
     )
 
+# Function to get email sending limits
 def get_email_limits():
-    # Use timezone-aware datetime
     now = datetime.now(timezone.utc)
     if 'last_reset' not in session or now - session['last_reset'] > timedelta(hours=24):
         session['emails_sent_today'] = 0
@@ -68,10 +79,12 @@ def get_email_limits():
         'next_reset': session.get('last_reset', now) + timedelta(hours=24)
     }
 
+# Home route
 @app.route('/')
 def home():
     return redirect(url_for('login'))
 
+# Login route
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -84,6 +97,7 @@ def login():
         flash('Invalid email or password', 'error')
     return render_template('login.html')
 
+# Register route
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -105,6 +119,7 @@ def register():
         return redirect(url_for('login'))
     return render_template('register.html')
 
+# Google login route
 @app.route('/google-login')
 def google_login():
     try:
@@ -119,6 +134,7 @@ def google_login():
         flash(f'Google login error: {str(e)}', 'error')
         return redirect(url_for('login'))
 
+# Google callback route
 @app.route('/google-callback')
 def google_callback():
     try:
@@ -154,6 +170,7 @@ def google_callback():
         flash(f'Google callback error: {str(e)}', 'error')
         return redirect(url_for('login'))
 
+# Dashboard route
 @app.route('/dashboard')
 @login_required
 def dashboard():
@@ -164,6 +181,7 @@ def dashboard():
                          limits=limits,
                          campaigns=campaigns)
 
+# Send emails route
 @app.route('/send-emails', methods=['POST'])
 @login_required
 def send_emails():
@@ -223,6 +241,7 @@ def send_emails():
         flash(f'Error sending emails: {str(e)}', 'error')
         return redirect(url_for('dashboard'))
     
+# Profile route
 @app.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
@@ -236,6 +255,7 @@ def profile():
         return redirect(url_for('profile'))
     return render_template('profile.html', user=current_user)
 
+# Logout route
 @app.route('/logout')
 def logout():
     logout_user()
@@ -243,8 +263,9 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
+# Main entry point
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()
-    freezer.freeze()  # Add this line to generate static files
+        db.create_all()  # Create database tables
+    freezer.freeze()  # Generate static files
     # app.run(host='0.0.0.0', port=5000, debug=True)  # Comment this out for static deployment
