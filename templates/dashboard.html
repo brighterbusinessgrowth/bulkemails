@@ -16,7 +16,7 @@
 </div>
 
 <h2>Send Bulk Emails</h2>
-<form method="POST" action="/send-emails">
+<form id="emailForm">
     <textarea name="emails" placeholder="Enter email addresses (one per line)" rows="10" cols="50" required></textarea><br>
     <input type="text" name="subject" placeholder="Subject" required><br>
     <textarea name="body" placeholder="Email body" rows="10" cols="50" required></textarea><br>
@@ -28,5 +28,74 @@
     <button type="submit">Send Emails</button>
 </form>
 
+<!-- Progress Bar -->
+<div id="sending-progress" style="margin-top: 20px; display: none;">
+    <h3>Sending Progress</h3>
+    <div id="progress-bar" style="width: 100%; background-color: #f3f3f3; border-radius: 5px;">
+        <div id="progress" style="width: 0%; height: 20px; background-color: #4CAF50; border-radius: 5px; text-align: center; line-height: 20px; color: white;">0%</div>
+    </div>
+    <p id="progress-text"></p>
+</div>
+
+<!-- Results Section -->
+<div id="results" style="margin-top: 20px;"></div>
+
 <a href="/profile">Edit Profile</a> | <a href="/logout">Logout</a>
+
+<!-- Add jQuery -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#emailForm').on('submit', function(e) {
+            e.preventDefault();  // Prevent the form from reloading the page
+
+            // Show the progress bar
+            $('#sending-progress').show();
+            $('#progress').css('width', '0%').text('0%');
+            $('#progress-text').text('Starting...');
+            $('#results').html('');  // Clear previous results
+
+            // Get form data
+            var formData = $(this).serialize();
+            var emails = $('textarea[name="emails"]').val().split('\n').filter(e => e.trim());  // Get list of emails
+            var totalEmails = emails.length;
+            var sentCount = 0;
+
+            // Function to send the next email
+            function sendNextEmail() {
+                if (sentCount >= totalEmails) {
+                    $('#progress-text').text('All emails sent successfully!');
+                    return;
+                }
+
+                var email = emails[sentCount];
+                $.ajax({
+                    url: '/send-emails',
+                    type: 'POST',
+                    data: formData + '&email=' + email,  // Send one email at a time
+                    success: function(response) {
+                        sentCount++;
+                        var progress = Math.round((sentCount / totalEmails) * 100);
+                        $('#progress').css('width', progress + '%').text(progress + '%');
+                        $('#progress-text').text('Sending ' + sentCount + ' of ' + totalEmails + ' emails...');
+
+                        if (response.error) {
+                            $('#results').append('<p style="color:red;">Error: ' + response.error + '</p>');
+                        } else {
+                            $('#results').append('<p style="color:green;">Sent to ' + email + '</p>');
+                        }
+
+                        sendNextEmail();  // Send the next email
+                    },
+                    error: function(xhr, status, error) {
+                        $('#results').append('<p style="color:red;">Failed to send to ' + email + ': ' + error + '</p>');
+                        sendNextEmail();  // Continue with the next email
+                    }
+                });
+            }
+
+            sendNextEmail();  // Start sending emails
+        });
+    });
+</script>
 {% endblock %}
